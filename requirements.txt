@@ -1,0 +1,9 @@
+matplotlib
+astropy
+numpy
+https://github.com/astropy/astroquery/archive/master.zip
+pandas
+ipympl
+ipyaladin
+photutils
+pyvo
