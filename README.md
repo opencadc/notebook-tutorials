@@ -1,2 +1,2 @@
 # notebook-tutorials
-Tutorials fon how to use CADC services astroquery.cadc tools
+Tutorials on how to use CADC services astroquery.cadc tools
