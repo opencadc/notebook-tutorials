@@ -1,50 +1,49 @@
 # Makefile for HTML for Jupyter Notebooks
 
-OUTDIR=html
-NBFILES = $(wildcard *.ipynb)
-HTMLFILES = $(patsubst %.ipynb,%.html,$(NBFILES))
-NBPY3 = $(shell pcregrep -Ml --buffer-size=500K '"language_info": .*(?s).*"version": 3' $(NBFILES))
-NBPY2 = $(shell pcregrep -Ml --buffer-size=500K '"language_info": .*(?s).*"version": 2' $(NBFILES))
-PY3 = $(shell whereis python | grep -o /usr/bin/python3.? | head -1)
+MAKEDIR=build
+OUTDIR=$(MAKEDIR)/html
+# NOTE: only Python3 notebooks are being built. astroquyer_example_sitelle.ipynb
+# is a Python2 notebook
+NBFILES = $(shell grep -l '"version": 3' astroquery_example_*)
 
 NBCONVERT = jupyter nbconvert --output-dir=./$(OUTDIR) --to html
 
-html:
+objects := $(patsubst %.ipynb,$(OUTDIR)/%.html,$(NBFILES))
+
+.PHONY: preBuild postBuild
+
+build: preBuild $(objects) postBuild
+
+$(objects): $(OUTDIR)/%.html: %.ipynb
+	@echo $<
 	@echo NOTEBOOK FILES: $(NBFILES)
 	@echo TARGET: $^
 
-	$(eval VENVDIR := $(shell mktemp -d venvtemp.XXX))
+	@echo Converting notebooks to HTML
+	$(NBCONVERT) --ExecutePreprocessor.timeout=-1 --execute $<
 
-ifdef NBPY3
-	$(PY3) -m venv ./$(VENVDIR) ;\
+
+preBuild:
+	$(eval VENVDIR := $(shell mktemp -d $(MAKEDIR)/venvtemp.XXX))
+	python3 -m venv ./$(VENVDIR) ;\
 	source ./$(VENVDIR)/bin/activate ;\
 
 	@echo Installing requirements
 	pip install -U pip ;\
 	pip install jupyter jupyter_contrib_nbextensions ;\
-	pip install -r requirements3.txt ;\
+	pip install -r requirements3.txt ;
 
-	@echo Converting notebooks to HTML
-	$(NBCONVERT) $(NBPY3) --ExecutePreprocessor.timeout=-1 --execute
 
-	@echo Shutting down virtural env and removing temp dir
-	deactivate ;\
-	rm -rf ./$(VENVDIR) ;\
-
-endif
-
-ifdef NBPY2
-	$(NBCONVERT) $(NBPY2) ;\
-
-endif 
+postBuild:
+	rm -fR $(VENVDIR)
 
 
 clean:
-	rm -rf $(OUTDIR) ;\
+	rm -rf $(MAKEDIR)/* ;\
+
 
 help: 
 	@echo "make"
 	@echo " Convert Jupyter notebooks to html"
 	@echo "make clean"
 	@echo " Remove html directory"
-
