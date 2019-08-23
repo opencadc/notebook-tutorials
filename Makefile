@@ -2,7 +2,8 @@
 
 MAKEDIR=build
 OUTDIR=$(MAKEDIR)/html
-# NOTE: only Python3 notebooks are being built. astroquyer_example_sitelle.ipynb
+VENVDIR=$(MAKEDIR)/venv
+# NOTE: only Python3 notebooks are being built. astroquery_example_sitelle.ipynb
 # is a Python2 notebook
 NBFILES = $(shell grep -l '"version": 3' astroquery_example_*)
 
@@ -10,9 +11,11 @@ NBCONVERT = jupyter nbconvert --output-dir=./$(OUTDIR) --to html
 
 objects := $(patsubst %.ipynb,$(OUTDIR)/%.html,$(NBFILES))
 
-.PHONY: preBuild postBuild
+.PHONY: build clean help
 
-build: preBuild $(objects) postBuild
+
+build: $(VENVDIR) $(objects)
+
 
 $(objects): $(OUTDIR)/%.html: %.ipynb
 	@echo $<
@@ -21,10 +24,12 @@ $(objects): $(OUTDIR)/%.html: %.ipynb
 
 	@echo Converting notebooks to HTML
 	$(NBCONVERT) --ExecutePreprocessor.timeout=-1 --execute $<
+	@echo DONE
 
 
-preBuild:
-	$(eval VENVDIR := $(shell mktemp -d $(MAKEDIR)/venvtemp.XXX))
+$(VENVDIR): requirements3.txt
+	rm -fR $(VENVDIR) ;\
+	mkdir $(VENVDIR) ;\
 	python3 -m venv ./$(VENVDIR) ;\
 	source ./$(VENVDIR)/bin/activate ;\
 
@@ -33,9 +38,6 @@ preBuild:
 	pip install jupyter jupyter_contrib_nbextensions ;\
 	pip install -r requirements3.txt ;
 
-
-postBuild:
-	rm -fR $(VENVDIR)
 
 
 clean:
